@@ -10,10 +10,9 @@ varying vec2 vTexCoords[blurAmount];
 
 void main() {
 	if (doBlur) {
-		gl_FragColor = vec4(0.0);
-		for (int i=0; i<blurAmount; i++) {
-			gl_FragColor += texture(tex, vTexCoords[i]) * gaussian[i];
-		}
+		@
+			gl_FragColor += texture(tex, vTexCoords[_i_]) * gaussian[_i_];
+		@
 	} else {
 		gl_FragColor = texture(tex, vTexCoords[0]);
 		gl_FragColor.a *= alpha;

@@ -29,7 +29,7 @@ RTT* glowMapMS = nullptr;
 RTT* glowTex1 = nullptr;
 RTT* glowTex2 = nullptr;
 VAO* fullVAO = nullptr;
-constexpr int GLOW_TEX_SCALE = 20;
+constexpr int GLOW_TEX_SCALE = 15;
 constexpr int GLOW_SIZE = 15;
 constexpr int GLOW_MULTISAMPLES = 8;
 int blurAmount = 1, maxBlurAmount;
@@ -74,8 +74,26 @@ void replaceAll(std::string& str, const std::string& from, const std::string& to
 	str.swap(wsRet); // faster than str = wsRet;
 }
 std::string blurSrc(std::string src) {
-	replaceAll(src, "@", std::to_string(blurAmount));
-	return src;
+	size_t i1 = src.find('@');
+	std::string src2 = src.substr(0, i1);
+	src2 += std::to_string(blurAmount);
+
+	size_t i2 = i1;
+	while ((i1 = src.find('@', i2+1)) != -1) {
+		src2 += src.substr(i2+1, i1-i2-1);
+		i2 = src.find('@', i1+1);
+		std::string toLoop = src.substr(i1+1, i2-i1-1);
+		for (int n=0; n<blurAmount; n++) {
+			std::string curLoop = toLoop;
+			replaceAll(curLoop, "_i_", std::to_string(n));
+			if (n==0) replaceAll(curLoop, "+=", "=");
+			src2 += curLoop;
+		}
+	}
+	src2 += src.substr(i2+1);
+
+	//cout<<"--------\n"<<src2<<"--------\n";
+	return src2;
 }
 void setBlurAmount(int gw, int gh) {
 	blurAmount = (gw+gh)/GLOW_SIZE;
@@ -102,8 +120,9 @@ void init() {
 
 	worldShader = new ShaderProg(world_vert, world_frag, {"position","aColor","aNormal","aTexCoords"});
 	worldShader->setUniform("tex", 0);
-	glGetIntegerv(GL_MAX_VARYING_VECTORS, &maxBlurAmount);
-	maxBlurAmount = 62;
+	glGetIntegerv(GL_MAX_VERTEX_OUTPUT_COMPONENTS, &maxBlurAmount);
+	maxBlurAmount = (maxBlurAmount-4)/2;
+	cout << "maxBlurAmount = " << maxBlurAmount << endl;
 	blurShader = new ShaderProg(blurSrc(blur_vert), blurSrc(blur_frag), {"position"});
 
 	test = new Chunk(0, 0, worldShader);
